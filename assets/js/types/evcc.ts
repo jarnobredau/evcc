@@ -1202,6 +1202,8 @@ export interface Notification {
   message: string;
   time: Date;
   level: string;
+  /** Log area of the source, e.g. a device name. */
+  area?: string;
   lp: number;
   count: number;
 }

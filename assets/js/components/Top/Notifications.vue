@@ -125,13 +125,16 @@ export default defineComponent({
 		}
 	},
 	methods: {
-		message({ message, lp }: { message: string | string[]; lp?: number }) {
-			const lines = Array.isArray(message) ? message : [message];
+		message({ message, lp, area }: { message: string | string[]; lp?: number; area?: string }) {
+			// copy, prefixing must not modify the notification on each render
+			const lines = Array.isArray(message) ? [...message] : [message];
 			if (lp) {
 				// Find loadpoint by id (which is the original 1-based index)
 				const loadpoint = this.loadpoints.find((l) => l.id === String(lp));
 				const title = loadpoint?.displayTitle || lp;
 				lines[0] = `${title}: ${lines[0]}`;
+			} else if (area) {
+				lines[0] = `${area}: ${lines[0]}`;
 			}
 			return lines;
 		},

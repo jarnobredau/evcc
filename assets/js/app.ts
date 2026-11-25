@@ -77,7 +77,7 @@ const app = createApp(
         if (!msg.level) msg.level = "error";
         const now = new Date();
         const existingMsg = this.notifications.find(
-          (n: Notification) => n.message === msg.message && n.lp === msg.lp
+          (n: Notification) => n.message === msg.message && n.lp === msg.lp && n.area === msg.area
         );
         if (existingMsg) {
           existingMsg.count++;
