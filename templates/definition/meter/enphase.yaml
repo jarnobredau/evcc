@@ -3,6 +3,7 @@ products:
   - brand: Enphase
     description:
       generic: IQ Gateway
+capabilities: ["battery-control"]
 requirements:
 discovery:
   mdns: ["_enphase-envoy._tcp"]
@@ -26,6 +27,17 @@ params:
       de: "Wähle 'iq' falls die neuere 'IQ Battery' Generation installiert ist. Standardeinstellung 'ac' für die ältere 'AC Battery' Generation."
     default: ac
     choice: ["ac", "iq"]
+    advanced: true
+    usages: ["battery"]
+  - name: batterycontrol
+    description:
+      en: Battery control
+      de: Batteriesteuerung
+    type: bool
+    default: false
+    help:
+      en: "IQ Battery only. Switches the battery mode through the gateway's local scheduler (`/ivp/sc/sched`): hold, charge from grid, discharge to load or grid. The scheduler API is not officially documented, tested with firmware D8.3.6005."
+      de: "Nur IQ Battery. Schaltet den Batteriemodus über den lokalen Scheduler des Gateways (`/ivp/sc/sched`): Entladesperre, Laden aus dem Netz, Entladen ins Haus oder ins Netz. Die Scheduler-Schnittstelle ist nicht offiziell dokumentiert, getestet mit Firmware D8.3.6005."
     advanced: true
     usages: ["battery"]
   - preset: battery-params
@@ -246,5 +258,33 @@ render: |
     cache: {{ .cache }}
     timeout: {{ .timeout }}
     jq: '[.[].devices[] | select(.percentFull != null) | .percentFull] | add / length'
+  {{- if and (eq .battery_type "iq") .batterycontrol }}
+  batterymode:
+    source: switch
+    switch:
+    {{- range $mode := list
+      (list 1 -1 "normal: release the override, Enphase profile decides")
+      (list 2 4 "holddischarge: No Discharge")
+      (list 3 2 "charge: Charge From Grid")
+      (list 4 5 "holdcharge: Discharge to Load")
+      (list 5 3 "discharge: Discharge to Grid")
+    }}
+    - case: {{ index $mode 0 }} # {{ index $mode 2 }}
+      set:
+        source: http
+        uri: {{ $.schema }}://{{ $.host }}/ivp/sc/sched
+        method: POST
+        headers:
+        - content-type: application/json
+        {{- if $.token }}
+        auth:
+          type: bearer
+          token: {{ $.token }}
+        insecure: true
+        {{- end }}
+        timeout: {{ $.timeout }}
+        body: '{"acb_debug_mode": {{ index $mode 1 }}}'
+    {{- end }}
+  {{- end }}
   {{- include "battery-params" . }}
   {{- end }}
